@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">🌧️ Coin Rain Challenge</h2>
+    </div>
+    <div class="card-body text-center">
+      <div class="mb-4">
+        <canvas id="coinCanvas" width="800" height="600"></canvas>
+      </div>
+
+      {% if can_play %}
+      <button id="startButton" class="btn btn-primary btn-lg">
+        🎮 Start Game
+      </button>
+      {% else %}
+      <button class="btn btn-secondary btn-lg" disabled>
+        ⏳ Come back tomorrow!
+      </button>
+      {% endif %}
+
+      <div id="score" class="mt-4 h4">Score: 0</div>
+      <div id="result" class="mt-2 h5"></div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/coin_rain.js') }}"></script>
+
+<script>
+{% if can_play %}
+document.getElementById('startButton').addEventListener('click', function() {
+  this.disabled = true;
+  const game = new CoinRain('coinCanvas');
+  game.start();
+  
+  game.onGameOver = async (score) => {
+    const response = await fetch('/claim_coinrain_reward', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ reward: score })
+    });
+    
+    const result = await response.json();
+    document.getElementById('result').textContent = result.message;
+    
+    if (result.success) {
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } else {
+      this.disabled = false;
+    }
+  };
+});
+{% endif %}
+</script>
+{% endblock %}

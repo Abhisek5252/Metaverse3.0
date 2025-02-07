@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h2 class="fw-bolder display-5">💰 Your Wallet</h2>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card bg-primary text-white mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Current Balance</h5>
+                        <p class="display-4 fw-bold">{{ user.coins }}</p>
+                        <p class="card-text">Metarush Coins</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-info text-white mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">Tokens</h5>
+                        <p class="display-4 fw-bold">{{ user.tokens }}</p>
+                        <p class="card-text">MetaVerse Tokens</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <h3 class="fw-bolder display-6">💱 Convert Coins to Tokens</h3>
+        <div class="conversion-info alert alert-info mt-3">
+            <h4 class="fw-bold mb-2">Exchange Rate</h4>
+            <p class="display-6 mb-0">100 Coins = 1 MetaVerse Token</p>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="coinAmount" class="fw-bold mb-2">Coins to Convert</label>
+                    <input type="number" class="form-control form-control-lg" id="coinAmount" min="100" step="100" placeholder="Enter amount of coins">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label class="fw-bold mb-2">You'll Receive</label>
+                    <div id="tokenAmount" class="form-control form-control-lg bg-light fw-bold">0 Tokens</div>
+                </div>
+            </div>
+        </div>
+        <button id="convertButton" class="btn btn-primary btn-lg mt-4 fw-bold">Convert Coins to Tokens</button>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <h3 class="fw-bolder display-6">🎮 Play Games to Earn More!</h3>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <a href="{{ url_for('game') }}" class="btn btn-primary btn-lg w-100 mb-3 fw-bold">
+                    🎡 Spin Wheel
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a href="{{ url_for('coinrain') }}" class="btn btn-info btn-lg w-100 mb-3 fw-bold">
+                    🌧️ Coin Rain
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Sections -->
+<div class="bottom-sections mt-5">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="section-card">
+                <h4 class="fw-bolder mb-3">🎯 Quick Links</h4>
+                <ul class="list-unstyled">
+                    <li><a href="{{ url_for('game') }}" class="nav-link">Spin Wheel</a></li>
+                    <li><a href="{{ url_for('coinrain') }}" class="nav-link">Coin Rain</a></li>
+                    <li><a href="{{ url_for('wallet') }}" class="nav-link">My Wallet</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="section-card">
+                <h4 class="fw-bolder mb-3">💎 Features</h4>
+                <ul class="list-unstyled">
+                    <li class="nav-link">Daily Rewards</li>
+                    <li class="nav-link">Mini Games</li>
+                    <li class="nav-link">Airdrops</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="section-card">
+                <h4 class="fw-bolder mb-3">🌟 Community</h4>
+                <ul class="list-unstyled">
+                    <li><a href="{{ url_for('leaderboard') }}" class="nav-link">Leaderboard</a></li>
+                    <li class="nav-link">Daily Challenges</li>
+                    <li class="nav-link">Special Events</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('coinAmount').addEventListener('input', function() {
+    const coins = parseInt(this.value) || 0;
+    const tokens = Math.floor(coins / 100);
+    document.getElementById('tokenAmount').textContent = tokens + ' Tokens';
+});
+
+document.getElementById('convertButton').addEventListener('click', async function() {
+    const coins = parseInt(document.getElementById('coinAmount').value) || 0;
+    if (coins < 100) {
+        alert('Minimum conversion amount is 100 coins');
+        return;
+    }
+
+    const response = await fetch('/convert_coins', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ coins: coins })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+        alert(result.message);
+        window.location.reload();
+    } else {
+        alert(result.message);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">🎡 Daily Spin Wheel</h2>
+    </div>
+    <div class="card-body text-center">
+      <div class="mb-4">
+        <canvas id="wheelCanvas" width="400" height="400"></canvas>
+      </div>
+      
+      {% if can_play %}
+      <button id="spinButton" class="btn btn-primary btn-lg">
+        🎲 Spin the Wheel!
+      </button>
+      {% else %}
+      <button class="btn btn-secondary btn-lg" disabled>
+        ⏳ Come back tomorrow!
+      </button>
+      {% endif %}
+      
+      <div id="result" class="mt-4 h4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Load external scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="{{ url_for('static', filename='js/spin_wheel.js') }}"></script>
+
+<script>
+  // Initialize wheel with segments and rewards
+  const segments = [
+    { color: '#FF6B6B', text: '50 coins', value: 50 },
+    { color: '#4ECDC4', text: '100 coins', value: 100 },
+    { color: '#45B7D1', text: '150 coins', value: 150 },
+    { color: '#96CEB4', text: '200 coins', value: 200 },
+    { color: '#D4A5A5', text: '250 coins', value: 250 },
+    { color: '#9B59B6', text: '300 coins', value: 300 },
+    { color: '#3498DB', text: '500 coins', value: 500 },
+    { color: '#FF9F43', text: '1000 coins', value: 1000 }
+  ];
+
+  const wheel = new SpinWheel('wheelCanvas', segments);
+  
+  {% if can_play %}
+  document.getElementById('spinButton').addEventListener('click', async function() {
+    this.disabled = true;
+    const reward = await wheel.spin();
+    
+    // Submit reward to server
+    const response = await fetch('/claim_spin_reward', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ reward: reward.value })
+    });
+    
+    const result = await response.json();
+    document.getElementById('result').textContent = result.message;
+    
+    if (result.success) {
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } else {
+      this.disabled = false;
+    }
+  });
+  {% endif %}
+</script>
+{% endblock %}
