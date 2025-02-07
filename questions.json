@@ -1,0 +1,16 @@
+{
+  "questions": [
+    {
+      "question": "What is the name of our virtual currency?",
+      "options": ["Bitcoin", "Ethereum", "Metarush Coins", "Dogecoin"],
+      "correct": 2,
+      "reward": 50
+    },
+    {
+      "question": "How often can you claim daily rewards?",
+      "options": ["Every hour", "Once per day", "Twice per day", "Once per week"],
+      "correct": 1,
+      "reward": 50
+    }
+  ]
+}

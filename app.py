@@ -46,7 +46,7 @@ def can_claim_daily(user):
 def get_or_create_user():
     user = User.query.get(1)
     if not user:
-        user = User(id=1, username="Player", coins=1500, tokens=0, last_spin=None, last_coinrain=None)
+        user = User(id=1, username="Player", coins=1500, tokens=0, last_spin=None, last_coinrain=None)  # Welcome bonus, added tokens and last play timestamps
         db.session.add(user)
         db.session.commit()
     return user
@@ -94,32 +94,12 @@ def leaderboard():
 def claim_daily():
     user = get_or_create_user()
     if can_claim_daily(user):
-        # Base reward amounts based on consecutive days
-        reward_amounts = {
-            1: 500,    # Day 1
-            2: 1000,   # Day 2 - 1K
-            3: 2500,   # Day 3 - 2.5K
-            4: 5000,   # Day 4 - 5K
-            5: 15000,  # Day 5 - 15K
-            6: 25000,  # Day 6 - 25K
-            7: 100000, # Day 7 - 100K
-            8: 500000  # Day 8 - 500K
-        }
-
-        if user.consecutive_days is None:
-            user.consecutive_days = 1
-        else:
-            user.consecutive_days += 1
-
-        # Cap at day 8
-        day = min(user.consecutive_days, 8)
-        amount = reward_amounts.get(day, 500)  # Default to 500 if day not found
-
+        amount = 100  # Fixed daily reward amount
         claim = DailyClaim(user_id=user.id, amount=amount)
         user.coins += amount
         db.session.add(claim)
         db.session.commit()
-        flash(f'🎉 You claimed {amount:,} Metarush Coins!', 'success')
+        flash('🎉 You claimed 100 Metarush Coins!', 'success')
     else:
         flash('⏰ Come back tomorrow for your next reward!', 'error')
     return redirect(url_for('index'))
@@ -144,27 +124,65 @@ def claim_airdrop():
     flash(f'🎉 You received {amount} coins from the airdrop!', 'success')
     return redirect(url_for('airdrop'))
 
-@app.route('/game')
-def game():
+@app.route('/answer_question', methods=['POST'])
+def answer_question():
     user = get_or_create_user()
-    can_play = can_play_game(user, 'spin')
-    return render_template('game.html', user=user, can_play=can_play)
+    answer = request.form.get('answer')
+    correct = request.form.get('correct')
 
-@app.route('/coinrain')
-def coinrain():
+    if answer == correct:
+        reward = random.randint(50, 200)
+        user.coins += reward
+        db.session.commit()
+        flash(f'✅ Correct! You earned {reward} coins!', 'success')
+    else:
+        flash('❌ Wrong answer! Try again!', 'error')
+
+    return redirect(url_for('tasks'))
+
+@app.route('/convert_coins', methods=['POST'])
+def convert_coins():
     user = get_or_create_user()
-    can_play = can_play_game(user, 'coinrain')
-    return render_template('coinrain.html', user=user, can_play=can_play)
+    try:
+        amount = int(request.form.get('amount', 0))
+        if amount < 100 or amount % 100 != 0:
+            flash('❌ Amount must be a multiple of 100 coins!', 'error')
+            return redirect(url_for('wallet'))
+
+        if user.coins < amount:
+            flash('❌ Insufficient coins for conversion!', 'error')
+            return redirect(url_for('wallet'))
+
+        tokens = amount // 100
+        user.coins -= amount
+        user.tokens += tokens
+        db.session.commit()
+
+        flash(f'✨ Successfully converted {amount} coins to {tokens} tokens!', 'success')
+    except ValueError:
+        flash('❌ Invalid amount entered!', 'error')
+
+    return redirect(url_for('wallet'))
+
+@app.route('/static/<path:path>')
+def serve_static(path):
+    return send_from_directory('static', path)
 
 def can_play_game(user, game_type):
     if game_type == 'spin':
         last_play = user.last_spin
     else:  # coinrain
         last_play = user.last_coinrain
-        
+
     if not last_play:
         return True
     return datetime.utcnow() - last_play > timedelta(days=1)
+
+@app.route('/game')
+def game():
+    user = get_or_create_user()
+    can_play = can_play_game(user, 'spin')
+    return render_template('game.html', user=user, can_play=can_play)
 
 @app.route('/claim_spin_reward', methods=['POST'])
 def claim_spin_reward():
@@ -183,6 +201,12 @@ def claim_spin_reward():
 
     return jsonify({'success': False, 'message': 'Better luck next time!'})
 
+@app.route('/coinrain')
+def coinrain():
+    user = get_or_create_user()
+    can_play = can_play_game(user, 'coinrain')
+    return render_template('coinrain.html', user=user, can_play=can_play)
+
 @app.route('/claim_coinrain_reward', methods=['POST'])
 def claim_coinrain_reward():
     user = get_or_create_user()
@@ -200,34 +224,5 @@ def claim_coinrain_reward():
 
     return jsonify({'success': False, 'message': 'No coins collected.'})
 
-@app.route('/convert_coins', methods=['POST'])
-def convert_coins():
-    user = get_or_create_user()
-    data = request.get_json()
-    coins_to_convert = data.get('coins', 0)
-
-    if coins_to_convert < 100:
-        return jsonify({
-            'success': False,
-            'message': 'Minimum conversion amount is 100 coins'
-        })
-
-    if user.coins < coins_to_convert:
-        return jsonify({
-            'success': False,
-            'message': 'Insufficient coins balance'
-        })
-
-    tokens_to_receive = coins_to_convert // 100
-    user.coins -= coins_to_convert
-    user.tokens += tokens_to_receive
-
-    db.session.commit()
-
-    return jsonify({
-        'success': True,
-        'message': f'Successfully converted {coins_to_convert:,} coins to {tokens_to_receive:,} tokens!'
-    })
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=3000, debug=True)

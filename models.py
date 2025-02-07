@@ -9,7 +9,6 @@ class User(db.Model):
     coins = db.Column(db.Integer, default=1500)  # Welcome bonus
     tokens = db.Column(db.Integer, default=0)
     score = db.Column(db.Integer, default=0)
-    consecutive_days = db.Column(db.Integer, default=0)  # Track login streak
     last_played = db.Column(db.DateTime)
     last_spin = db.Column(db.DateTime)  # Track last spin wheel play
     last_coinrain = db.Column(db.DateTime)  # Track last coin rain play
